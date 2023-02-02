@@ -4,70 +4,78 @@ import time
 import random
 from arbuz_fetchs import PARAMS, PAGE_COUNT, URL_NXT, URL_FST, PATTERN, CATEGORY
 import datetime
-from share_functions import disc, disc_prercent
+from share_functions import disc, disc_prercent, get_fetch
 
 
-now = datetime.datetime.now()
+class ArbuzApiScraper():
 
-def fetch(url, params):
-    headers = params['headers']
-    body = params['body']
-    method = params['method']
+    def __init__(self):
+        self.rezult = []
+        self.df = None
+        self.date_time_now = datetime.datetime.now()
 
-    if method == 'POST':
-        return requests.post(url=url, headers=headers, data=body)
-    elif method == 'GET':
-        return requests.get(url=url, headers=headers)
+    def __rand_pause(self):
+        time.sleep(15 + random.randint(-10, 15))
+
+    def __get_next_fetch(self, num):
+
+        if num == 1:
+            return get_fetch(URL_FST, PARAMS)
+        else:
+            return get_fetch(URL_NXT.replace(PATTERN, str(num)), PARAMS)
+
+    def fill_rezult(self):
+
+        for page_num in range(1, PAGE_COUNT + 1):
+            print(f'Запрос {page_num} из {PAGE_COUNT}')
+            cur_fetch = self.__get_next_fetch(page_num)
+            sub_category = cur_fetch.json()['data']['name']
+            category = cur_fetch.json()['data']['parent']['data']['name']
+            products = cur_fetch.json()['data']['products']['data']
+
+            for product in products:
+                l = {
+                    'title': product['name'],
+                    'sub_category': sub_category,
+                    'category': category,
+                    'brand': product['brandName'],
+                    'priceActual': product['priceActual'],
+                    'pricePrevious': product['pricePrevious'],
+                }
+
+                self.rezult.append(l)
+
+            if page_num != PAGE_COUNT:
+                self.__rand_pause()
 
 
-def get_next_fetch(num):
+    def __make_DataFrame(self):
+        df = pd.DataFrame(self.rezult)
 
-    if num == 1:
-        return fetch(URL_FST, PARAMS)
-    else:
-        return fetch(URL_NXT.replace(PATTERN, str(num)), PARAMS)
+        df['discount'] = df.loc[:, ['pricePrevious', 'priceActual']].apply(disc, axis=1)
+        df['discount_prc'] = df.loc[:, ['pricePrevious', 'discount']].apply(disc_prercent, axis=1)
+        self.df = df
 
+    def __upload_to_excel(self):
 
-def fill_rezult():
-    rezult = []
-    for page_num in range(1, PAGE_COUNT + 1):
+        try:
+            file_name = f'data_rezult/Арбуз - {CATEGORY} {self.date_time_now.strftime("%d_%m_%Y")}.xlsx'
+            self.df.to_excel(file_name)
+            print(f'Создан файл {file_name}')
+        except Exception as ex:
+            print(ex)
 
-        print(f'Запрос {page_num} из {PAGE_COUNT}')
-
-        cur_fetch = get_next_fetch(page_num)
-
-        sub_category = cur_fetch.json()['data']['name']
-        category = cur_fetch.json()['data']['parent']['data']['name']
-
-        products = cur_fetch.json()['data']['products']['data']
-
-        for product in products:
-            l = {
-                'title': product['name'],
-                'sub_category': sub_category,
-                'category': category,
-                'brand': product['brandName'],
-                'priceActual': product['priceActual'],
-                'pricePrevious': product['pricePrevious'],
-            }
-
-            rezult.append(l)
-
-        if page_num != PAGE_COUNT:
-            time.sleep(15 + random.randint(-10, 15))
-
-    return rezult
+    def start(self):
+        self.fill_rezult()
+        self.__make_DataFrame()
+        self.__upload_to_excel()
 
 
 def main():
-    df = pd.DataFrame(fill_rezult())
 
-    df['discount'] = df.loc[:, ['pricePrevious', 'priceActual']].apply(disc, axis=1)
-    df['discount_prc'] = df.loc[:, ['pricePrevious', 'discount']].apply(disc_prercent, axis=1)
+    arbuz = ArbuzApiScraper()
+    arbuz.start()
 
-    df.to_excel(f'data_rezult/Арбуз - {CATEGORY} {now.strftime("%d_%m_%Y")}.xlsx')
-
-    print('Готово!')
 
 if __name__ == '__main__':
     main()

@@ -9,12 +9,12 @@ import datetime
 from share_functions import disc, disc_prercent
 
 
-
 CATEGORY = 'Соки, вода, напитки'
 URL = 'https://kaspi.kz/shop/c/food/?q=%3AallMerchants%3AMagnum%3AavailableInZones%3AMagnum_ZONE1'
 # URL = 'https://2ip.ru/'
 
 CHROMEDRIVER = '/Users/hachimantaro/PycharmProjects/Ch_scrp/chromedriver/chromedriver'
+
 
 def make_driver():
     useragent = UserAgent()
@@ -93,6 +93,7 @@ def search_data(driver):
 
     return rezult
 
+
 def push_the_button_next(driver):
 
 
@@ -126,6 +127,7 @@ def to_file(rezult):
     df.to_excel(f'data_rezult/KaspiMagnum - {CATEGORY} {now.strftime("%d_%m_%Y")}.xlsx')
     return
 
+
 def main():
     driver = make_driver()
     rezult = search_data(driver)
@@ -134,6 +136,7 @@ def main():
     time.sleep(5 + random.randint(-2, 10))
     driver.close()
     print('Готово!')
+
 
 if __name__ == '__main__':
     main()
