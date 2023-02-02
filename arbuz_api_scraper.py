@@ -1,11 +1,12 @@
-import requests
 import pandas as pd
 import time
 import random
-from arbuz_fetchs import PARAMS, PAGE_COUNT, URL_NXT, URL_FST, PATTERN, CATEGORY
+from arbuz_fetchs import PARAMS, URL_NXT, URL_FST, PAGE, SUB_CATALOG, CATALOG_NUMBER
 import datetime
 from share_functions import disc, disc_prercent, get_fetch
 
+
+CATEGORY = ''
 
 class ArbuzApiScraper():
 
@@ -17,37 +18,55 @@ class ArbuzApiScraper():
     def __rand_pause(self):
         time.sleep(15 + random.randint(-10, 15))
 
-    def __get_next_fetch(self, num):
-
-        if num == 1:
-            return get_fetch(URL_FST, PARAMS)
-        else:
-            return get_fetch(URL_NXT.replace(PATTERN, str(num)), PARAMS)
-
     def fill_rezult(self):
+        global CATEGORY
 
-        for page_num in range(1, PAGE_COUNT + 1):
-            print(f'Запрос {page_num} из {PAGE_COUNT}')
-            cur_fetch = self.__get_next_fetch(page_num)
-            sub_category = cur_fetch.json()['data']['name']
-            category = cur_fetch.json()['data']['parent']['data']['name']
-            products = cur_fetch.json()['data']['products']['data']
+        url = URL_FST.replace(SUB_CATALOG, str(CATALOG_NUMBER))
+        fst_fetch = get_fetch(url, PARAMS)
+        CATEGORY = fst_fetch.json()['data']['name']
 
-            for product in products:
-                l = {
-                    'title': product['name'],
-                    'sub_category': sub_category,
-                    'category': category,
-                    'brand': product['brandName'],
-                    'priceActual': product['priceActual'],
-                    'pricePrevious': product['pricePrevious'],
-                }
+        sub_catalog_list = [{'id': catalog['id'], 'uri': catalog['uri']}
+                            for catalog in fst_fetch.json()['data']['catalogs']['data']]
 
-                self.rezult.append(l)
+        for sub_catalog_dict in sub_catalog_list:
 
-            if page_num != PAGE_COUNT:
-                self.__rand_pause()
+            url = URL_FST.replace(SUB_CATALOG, str(sub_catalog_dict['id']))
+            cur_fetch = get_fetch(url, PARAMS)
 
+            products_count = cur_fetch.json()['data']['products']['page']['count']
+            list_lim = cur_fetch.json()['data']['products']['page']['limit']
+            add_page = 1 if (products_count % list_lim) > 0 else 0
+            page_count = products_count // list_lim + add_page
+
+            for page_num in range(1, page_count + 1):
+
+                # ответ на запрос для первой страницы уже получен,
+                if page_num > 1:
+                    url = URL_NXT.replace(SUB_CATALOG, str(sub_catalog_dict['id']))
+                    url = url.replace(PAGE, str(page_num))
+                    cur_fetch = get_fetch(url, PARAMS)
+
+                sub_category = cur_fetch.json()['data']['name']
+                products = cur_fetch.json()['data']['products']['data']
+
+                print(f'Запрос {page_num} из {page_count} по {sub_category}')
+
+                for product in products:
+                    l = {
+                        'title': product['name'],
+                        'sub_category': sub_category,
+                        'category': CATEGORY,
+                        'brand': product['brandName'],
+                        'priceActual': product['priceActual'],
+                        'pricePrevious': product['pricePrevious'],
+                    }
+
+                    self.rezult.append(l)
+
+                if page_num != page_count:
+                    self.__rand_pause()
+
+            self.__rand_pause()
 
     def __make_DataFrame(self):
         df = pd.DataFrame(self.rezult)
