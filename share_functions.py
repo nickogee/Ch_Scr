@@ -1,3 +1,4 @@
+import pandas as pd
 import requests
 
 
@@ -24,3 +25,20 @@ def get_fetch(url, params):
         return requests.post(url=url, headers=headers, data=body)
     elif method == 'GET':
         return requests.get(url=url, headers=headers)
+
+
+def make_DataFrame(rezult):
+    df = pd.DataFrame(rezult)
+
+    df['discount'] = df.loc[:, ['pricePrevious', 'priceActual']].apply(disc, axis=1)
+    df['discount_prc'] = df.loc[:, ['pricePrevious', 'discount']].apply(disc_prercent, axis=1)
+    return df
+
+
+def upload_to_excel(df, file_name):
+
+    try:
+        df.to_excel(file_name)
+        print(f'Создан файл {file_name}')
+    except Exception as ex:
+        print(ex)

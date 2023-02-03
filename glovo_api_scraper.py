@@ -1,7 +1,6 @@
-import pandas as pd
 from glovo_fetchs import PARAMS, URL_SERV, URL_FST, CATEGORY
 import datetime
-from share_functions import disc, disc_prercent, get_fetch
+from share_functions import get_fetch, make_DataFrame, upload_to_excel
 
 
 class GlovoApiScraper():
@@ -38,20 +37,11 @@ class GlovoApiScraper():
                     self.rezult.append(l)
 
     def __make_DataFrame(self):
-        df = pd.DataFrame(self.rezult)
-
-        df['discount'] = df.loc[:, ['pricePrevious', 'priceActual']].apply(disc, axis=1)
-        df['discount_prc'] = df.loc[:, ['pricePrevious', 'discount']].apply(disc_prercent, axis=1)
-        self.df = df
+        self.df = make_DataFrame(self.rezult)
 
     def __upload_to_excel(self):
-
-        try:
-            file_name = f'data_rezult/Глово - {CATEGORY} {self.date_time_now.strftime("%d_%m_%Y")}.xlsx'
-            self.df.to_excel(file_name)
-            print(f'Создан файл {file_name}')
-        except Exception as ex:
-            print(ex)
+        file_name = f'data_rezult/Глово - {CATEGORY} {self.date_time_now.strftime("%d_%m_%Y")}.xlsx'
+        upload_to_excel(self.df, file_name)
 
     def start(self):
         self.fill_rezult()
