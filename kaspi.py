@@ -9,8 +9,9 @@ import datetime
 from share_functions import make_DataFrame, upload_to_excel, disc, disc_prercent
 
 
-CATEGORY = 'Молочные продукты, яйца'
+CATEGORY = 'Овощи, фрукты, ягоды, грибы'
 URL = 'https://kaspi.kz/shop/c/food/?q=%3AallMerchants%3AMagnum%3AavailableInZones%3AMagnum_ZONE1'
+# URL = 'https://kaspi.kz/shop/c/beauty%20care/?q=%3AallMerchants%3AMagnum%3AavailableInZones%3AMagnum_ZONE1'
 # URL = 'https://2ip.ru/'
 
 CHROMEDRIVER = '/Users/hachimantaro/PycharmProjects/Ch_scrp/chromedriver/chromedriver'
@@ -37,7 +38,7 @@ class KaspiParser():
         self.driver = driver
 
     def rand_pause(self):
-        time.sleep(10 + random.randint(0, 7))
+        time.sleep(10 + random.randint(0, 10))
 
     def __find_element(self, by, value):
         return self.driver.find_element(by, value)
@@ -264,14 +265,6 @@ def main():
 
     kaspi = KaspiParser()
     kaspi.start()
-
-    # driver = make_driver()
-    # rezult = search_data(driver)
-    # to_file(rezult)
-    #
-    # time.sleep(5 + random.randint(-2, 10))
-    # driver.close()
-    # print('Готово!')
 
 
 if __name__ == '__main__':
